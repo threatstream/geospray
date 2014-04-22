@@ -83,6 +83,13 @@ trait MyService extends HttpService {
                 }
             }
         }
+    } ~
+    path("") {
+        get {
+            complete {
+                "Hello there!"
+            }
+        }
     }
 }
 
