@@ -1,7 +1,7 @@
 geospray
 ========
 
-High performance REST API for returning Maxmind IP -> GEO data using Maxmind free database stored in S3
+High performance REST API for returning Maxmind IP -> GEO data using Maxmind free or paid City database stored in S3
 
 ========
 
