@@ -14,7 +14,7 @@ import spray.json._
 
 // we don't implement our route structure directly in the service actor because
 // we want to be able to test it independently, without having to spin up an actor
-class MyServiceActor extends Actor with MyService {
+class GeoSprayActor extends Actor with GeoSpray {
 
     // the HttpService trait defines only one abstract member, which
     // connects the services environment to the enclosing actor or test
@@ -34,7 +34,7 @@ import ExtendedJsonProtocol._
 
 
 // this trait defines our service behavior independently from the service actor
-trait MyService extends HttpService {
+trait GeoSpray extends HttpService {
 
     val ipGeo = {
         import java.io.File

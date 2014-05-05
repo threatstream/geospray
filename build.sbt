@@ -11,7 +11,8 @@ resolvers ++= Seq(
     "Typesafe releases" at "http://repo.typesafe.com/typesafe/releases",
     "spray repo" at "http://repo.spray.io/",
     "SnowPlow Repo" at "http://maven.snplow.com/releases/",
-    "Twitter Maven Repo" at "http://maven.twttr.com/"
+    "Twitter Maven Repo" at "http://maven.twttr.com/",
+    "Scala.sh releases" at "http://maven.twttr.com/repositories/releases"
 )
 
 libraryDependencies ++= {

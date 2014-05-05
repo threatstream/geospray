@@ -10,7 +10,7 @@ object Boot extends App {
   implicit val system = ActorSystem("on-spray-can")
 
   // create and start our service actor
-  val service = system.actorOf(Props[MyServiceActor], "demo-service")
+  val service = system.actorOf(Props[GeoSprayActor], "geospray-service")
 
   val listenPort: Int = {
         Option(System.getenv("PORT")) match {
