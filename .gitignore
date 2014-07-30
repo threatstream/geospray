@@ -16,6 +16,10 @@ project/plugins/project/
 .scala_dependencies
 .worksheet
 
+# IntelliJ IDEA
+.idea/*
+
 # Vim tempfiles
 *.sw[op]
+
 

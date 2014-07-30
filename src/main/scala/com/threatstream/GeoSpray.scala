@@ -6,10 +6,20 @@ import spray.routing._
 import spray.http._
 import MediaTypes._
 
-import com.snowplowanalytics.maxmind.geoip.{IpGeo, IpLocation}
+import com.snowplowanalytics.maxmind.iplookups.{IpLocation, IpLookups, IpLookupResult}
 
 import spray.json._
 //import DefaultJsonProtocol._ // !!! IMPORTANT, else `convertTo` and `toJson` won't work correctly
+
+import IpCombined._
+
+
+/** Add conversion capability from IpCombined => JSON */
+object ExtendedJsonProtocol extends DefaultJsonProtocol {
+    implicit val ipCombinedFormat = jsonFormat15(IpCombined.apply)
+}
+
+import ExtendedJsonProtocol._
 
 
 // we don't implement our route structure directly in the service actor because
@@ -26,31 +36,32 @@ class GeoSprayActor extends Actor with GeoSpray {
     def receive = runRoute(myRoute)
 }
 
-object ExtendedJsonProtocol extends DefaultJsonProtocol {
-    implicit val ipLocationFormat = jsonFormat10(IpLocation.apply)
-}
-
-import ExtendedJsonProtocol._
-
 
 // this trait defines our service behavior independently from the service actor
 trait GeoSpray extends HttpService {
 
-    val ipGeo = {
+    val ipLookups = {
         import java.io.File
         import com.amazonaws.services.s3.AmazonS3Client
         import com.amazonaws.services.s3.model.GetObjectRequest
         import com.amazonaws.auth.BasicAWSCredentials
-        
-        val fileName = "/tmp/GeoLiteCity.dat"
-        val dbFile = new File(fileName)
-        if (!dbFile.exists) {
-            System.out.println("downloading geoip db from s3")
-            val auth = new BasicAWSCredentials(System.getenv("AWS_ACCESS_KEY"), System.getenv("AWS_SECRET_KEY"))
-            val client = new AmazonS3Client(auth)
-            client.getObject(new GetObjectRequest(System.getenv("AWS_S3_BUCKET_NAME"), "GeoLiteCity.dat"), dbFile)
-        }
-        IpGeo(dbFile=fileName, memCache=false, lruCache=1)
+
+        val prefix = "/tmp/"
+        val geoFile = "GeoLiteCity.dat"
+        val ispFile = "GeoIPISP.dat"
+        val orgFile = "GeoIPOrg.dat"
+
+        val auth = new BasicAWSCredentials(System.getenv("AWS_ACCESS_KEY"), System.getenv("AWS_SECRET_KEY"))
+        val client = new AmazonS3Client(auth)
+
+        Seq(geoFile, ispFile, orgFile).map(fileName => {
+            val dbFile = new File(prefix + fileName)
+            if (!dbFile.exists) {
+                System.out.println("downloading geoip db from s3: " + fileName)
+                client.getObject(new GetObjectRequest(System.getenv("AWS_S3_BUCKET_NAME"), fileName), dbFile)
+            }
+        })
+        IpLookups(geoFile=Some(prefix + geoFile), ispFile=Some(prefix + ispFile), orgFile=Some(prefix + orgFile), memCache=false, lruCache=1)
     }
 
 
@@ -59,17 +70,10 @@ trait GeoSpray extends HttpService {
             pathEnd {
                 get {
                     respondWithMediaType(`application/json`) { // XML is marshalled to `text/xml` by default, so we simply override here
-                        var loc: Option[IpLocation] = None
-                        for (loc2 <- ipGeo.getLocation(ipv4Address)) {
-                            println(loc2.countryCode + " " + loc2.countryName + ": long=" + loc2.longitude + ", lat=" + loc2.latitude)
-                            loc = Some(loc2)
-                        }
-                        val out: IpLocation = loc.head
-                        //val out = List(1,2,3) //: IpLocation = loc.head
+                        val ipLookupResult = ipLookups.performLookups(ipv4Address)
+                        println(ipLookupResult)
+                        val out: IpCombined = ipLookupResult
                         complete { out.toJson.prettyPrint }
-                        //val source = """{ "some": "JSON source" }"""
-                        //val jsonAst = source.asJson // or JsonParser(source)
-                        //val json = jsonAst.prettyPrint // or .compactPrint
                 }
             }
         }
