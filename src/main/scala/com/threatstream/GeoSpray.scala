@@ -74,26 +74,26 @@ trait GeoSpray extends HttpService {
                         println(ipLookupResult)
                         val out: IpCombined = ipLookupResult
                         complete { out.toJson.prettyPrint }
+                    }
                 }
             }
-        }
-    } ~
-    pathPrefix("reverse" / """^[0-9\.]+$""".r) { ipv4Address =>
-        pathEnd {
+        } ~
+        pathPrefix("reverse" / """^[0-9\.]+$""".r) { ipv4Address =>
+            pathEnd {
+                get {
+                    respondWithMediaType(`application/json`) { // XML is marshalled to `text/xml` by default, so we simply override here
+                        import java.net.InetAddress
+                        complete { "{\"" + ipv4Address + "\":\"" + InetAddress.getByName(ipv4Address).getCanonicalHostName + "\"}" }
+                    }
+                }
+            }
+        } ~
+        path("") {
             get {
-                respondWithMediaType(`application/json`) { // XML is marshalled to `text/xml` by default, so we simply override here
-                    import java.net.InetAddress
-                    complete { "{\"" + ipv4Address + "\":\"" + InetAddress.getByName(ipv4Address).getCanonicalHostName + "\"}" }
+                complete {
+                    "Hello there!"
                 }
             }
         }
-    } ~
-    path("") {
-        get {
-            complete {
-                "Hello there!"
-            }
-        }
-    }
 }
 
