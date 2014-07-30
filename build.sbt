@@ -1,5 +1,7 @@
 organization  := "com.threatstream"
 
+name          := "GeoSpray"
+
 version       := "0.1"
 
 scalaVersion  := "2.10.3"
@@ -26,10 +28,16 @@ libraryDependencies ++= {
         "com.typesafe.akka" %% "akka-actor" % akkaV,
         "com.typesafe.akka" %% "akka-testkit" % akkaV,
         "org.specs2" %% "specs2" % "2.2.3" % "test",
-        "com.snowplowanalytics" %% "scala-maxmind-geoip" % "0.0.5",
+        "com.snowplowanalytics" %% "scala-maxmind-iplookups" % "0.1.0",
         "com.amazonaws" % "aws-java-sdk"  % "1.6.12"
     )
 }
+
+ideaExcludeFolders += ".idea"
+
+ideaExcludeFolders += ".idea_modules"
+
+sublimeTransitive := true
 
 //seq(Revolver.settings: _*)
 Revolver.settings
