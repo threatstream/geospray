@@ -50,13 +50,14 @@ trait GeoSpray extends HttpService {
         val geoFile = "GeoLiteCity.dat"
         val ispFile = "GeoIPISP.dat"
         val orgFile = "GeoIPOrg.dat"
-        
+
+        val auth = new BasicAWSCredentials(System.getenv("AWS_ACCESS_KEY"), System.getenv("AWS_SECRET_KEY"))
+        val client = new AmazonS3Client(auth)
+
         Seq(geoFile, ispFile, orgFile).map(fileName => {
             val dbFile = new File(prefix + fileName)
             if (!dbFile.exists) {
                 System.out.println("downloading geoip db from s3: " + fileName)
-                val auth = new BasicAWSCredentials(System.getenv("AWS_ACCESS_KEY"), System.getenv("AWS_SECRET_KEY"))
-                val client = new AmazonS3Client(auth)
                 client.getObject(new GetObjectRequest(System.getenv("AWS_S3_BUCKET_NAME"), fileName), dbFile)
             }
         })
