@@ -29,7 +29,7 @@ libraryDependencies ++= {
         "com.typesafe.akka" %% "akka-testkit" % akkaV,
         "org.specs2" %% "specs2" % "2.2.3" % "test",
         "com.snowplowanalytics" %% "scala-maxmind-iplookups" % "0.1.0",
-        "com.amazonaws" % "aws-java-sdk"  % "1.6.12"
+        "com.amazonaws" % "aws-java-sdk" % "1.8.6"
     )
 }
 
@@ -41,4 +41,42 @@ sublimeTransitive := true
 
 //seq(Revolver.settings: _*)
 Revolver.settings
+
+
+val downloader = taskKey[Unit]("downloader")
+
+downloader := {
+    //val process = java.lang.Runtime.getRuntime().exec("ls -al /");
+    //val reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))
+    //while (reader.ready()) {
+    //    println(reader.readLine())
+    //}
+    println("a")
+    val prefix = java.lang.System.getenv("HOME") + "/"
+    println("b")
+    val auth = new com.amazonaws.auth.BasicAWSCredentials(java.lang.System.getenv("AWS_ACCESS_KEY"), java.lang.System.getenv("AWS_SECRET_KEY"))
+    println("c")
+    val client = new com.amazonaws.services.s3.AmazonS3Client(auth)
+    println("d")
+    Seq("GeoLiteCity.dat", "GeoIPISP.dat", "GeoIPOrg.dat") foreach { fileName =>
+        println("e")
+        val dbFile = new java.io.File(prefix + fileName)
+        println("f")
+        if (!dbFile.exists) {
+            println("g")
+            System.out.println("downloading geoip db from s3: " + fileName)
+            println("h")
+            client.getObject(new com.amazonaws.services.s3.model.GetObjectRequest(System.getenv("AWS_S3_BUCKET_NAME"), fileName), dbFile)
+            println("i")
+        } else {
+            println("j")
+            println("arleady exists: " + prefix + fileName)
+            println("k")
+        }
+        println("l")
+    }
+    println("done")
+}
+
+downloader <<= downloader triggeredBy (compile in Compile)
 
