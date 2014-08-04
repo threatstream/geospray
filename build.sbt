@@ -56,7 +56,7 @@ downloader := {
     val auth = new com.amazonaws.auth.BasicAWSCredentials(java.lang.System.getenv("AWS_ACCESS_KEY"), java.lang.System.getenv("AWS_SECRET_KEY"))
     println("creating aws client")
     val client = new com.amazonaws.services.s3.AmazonS3Client(auth)
-    Seq("GeoLiteCity.dat", "GeoIPISP.dat", "GeoIPOrg.dat") foreach { fileName =>
+    Seq("GeoLiteCity.dat", "GeoIPNetspeed.dat", "GeoIPOrg.dat", "GeoIPASNum.dat") foreach { fileName =>
         val dbFile = new java.io.File(prefix + fileName)
         if (!dbFile.exists) {
             println("downloading geoip db from s3: " + fileName)

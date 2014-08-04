@@ -21,11 +21,18 @@ case class IpCombined(
     val isp: Option[String] = None,
     val org: Option[String] = None,
     val domain: Option[String] = None,
-    val netspeed: Option[String] = None
+    val netspeed: Option[String] = None,
+    val asn: Option[Int] = None
 )
 
 object IpCombined {
-    def apply(ipLookupResult: IpLookupResult): IpCombined = {
+    private val _asnParserPattern = """^AS([0-9]+) (.*)""".r
+
+    def apply(ipLookupResult: IpLookupResult, asnInfo: String): IpCombined = {
+        val (asn, isp) = asnInfo match {
+            case _asnParserPattern(asn, isp) => (Some(asn.toInt), Some(isp))
+            case _ => (None, None)
+        }
         ipLookupResult._1 match {
             case Some(geo) =>
                 IpCombined(
@@ -40,15 +47,16 @@ object IpCombined {
                     geo.areaCode,
                     geo.metroCode,
                     geo.regionName,
-                    ipLookupResult._2, // isp
+                    if (ipLookupResult._2 != None) { ipLookupResult._2 } else { isp }, // isp
                     ipLookupResult._3, // org
                     ipLookupResult._4, // domain
-                    ipLookupResult._5 // netspeed
+                    ipLookupResult._5, // netspeed
+                    asn // asn
                 )
 
             case None => IpCombined(isp = ipLookupResult._2, org = ipLookupResult._3, domain = ipLookupResult._4, netspeed = ipLookupResult._5)
         }
     }
 
-    implicit def ipLookupResultToCombined(ipLookupResult: IpLookupResult): IpCombined = apply(ipLookupResult)
+    implicit def ipLookupResultToCombined(ipLookupResultAndAsn: Tuple2[IpLookupResult, String]): IpCombined = apply(ipLookupResultAndAsn._1, ipLookupResultAndAsn._2)
 }
