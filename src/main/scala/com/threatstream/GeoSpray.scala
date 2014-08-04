@@ -46,19 +46,15 @@ trait GeoSpray extends HttpService {
         import com.amazonaws.services.s3.model.GetObjectRequest
         import com.amazonaws.auth.BasicAWSCredentials
 
-        val prefix = "/tmp/"
+        val prefix = System.getenv("HOME") + "/"
         val geoFile = "GeoLiteCity.dat"
         val ispFile = "GeoIPISP.dat"
         val orgFile = "GeoIPOrg.dat"
 
-        val auth = new BasicAWSCredentials(System.getenv("AWS_ACCESS_KEY"), System.getenv("AWS_SECRET_KEY"))
-        val client = new AmazonS3Client(auth)
-
         Seq(geoFile, ispFile, orgFile).map(fileName => {
             val dbFile = new File(prefix + fileName)
             if (!dbFile.exists) {
-                System.out.println("downloading geoip db from s3: " + fileName)
-                client.getObject(new GetObjectRequest(System.getenv("AWS_S3_BUCKET_NAME"), fileName), dbFile)
+                throw new Exception("Missing required data file: " + dbFile.getAbsolutePath)
             }
         })
         IpLookups(geoFile=Some(prefix + geoFile), ispFile=Some(prefix + ispFile), orgFile=Some(prefix + orgFile), memCache=false, lruCache=1)
@@ -74,26 +70,26 @@ trait GeoSpray extends HttpService {
                         println(ipLookupResult)
                         val out: IpCombined = ipLookupResult
                         complete { out.toJson.prettyPrint }
+                    }
                 }
             }
-        }
-    } ~
-    pathPrefix("reverse" / """^[0-9\.]+$""".r) { ipv4Address =>
-        pathEnd {
+        } ~
+        pathPrefix("reverse" / """^[0-9\.]+$""".r) { ipv4Address =>
+            pathEnd {
+                get {
+                    respondWithMediaType(`application/json`) { // XML is marshalled to `text/xml` by default, so we simply override here
+                        import java.net.InetAddress
+                        complete { "{\"" + ipv4Address + "\":\"" + InetAddress.getByName(ipv4Address).getCanonicalHostName + "\"}" }
+                    }
+                }
+            }
+        } ~
+        path("") {
             get {
-                respondWithMediaType(`application/json`) { // XML is marshalled to `text/xml` by default, so we simply override here
-                    import java.net.InetAddress
-                    complete { "{\"" + ipv4Address + "\":\"" + InetAddress.getByName(ipv4Address).getCanonicalHostName + "\"}" }
+                complete {
+                    "Hello there!"
                 }
             }
         }
-    } ~
-    path("") {
-        get {
-            complete {
-                "Hello there!"
-            }
-        }
-    }
 }
 
