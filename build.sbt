@@ -51,29 +51,19 @@ downloader := {
     //while (reader.ready()) {
     //    println(reader.readLine())
     //}
-    println("a")
     val prefix = java.lang.System.getenv("HOME") + "/"
-    println("b")
+    println("creating aws auth")
     val auth = new com.amazonaws.auth.BasicAWSCredentials(java.lang.System.getenv("AWS_ACCESS_KEY"), java.lang.System.getenv("AWS_SECRET_KEY"))
-    println("c")
+    println("creating aws client")
     val client = new com.amazonaws.services.s3.AmazonS3Client(auth)
-    println("d")
-    Seq("GeoLiteCity.dat", "GeoIPISP.dat", "GeoIPOrg.dat") foreach { fileName =>
-        println("e")
+    Seq("GeoLiteCity.dat", "GeoIPNetspeed.dat", "GeoIPOrg.dat", "GeoIPASNum.dat") foreach { fileName =>
         val dbFile = new java.io.File(prefix + fileName)
-        println("f")
         if (!dbFile.exists) {
-            println("g")
-            System.out.println("downloading geoip db from s3: " + fileName)
-            println("h")
+            println("downloading geoip db from s3: " + fileName)
             client.getObject(new com.amazonaws.services.s3.model.GetObjectRequest(System.getenv("AWS_S3_BUCKET_NAME"), fileName), dbFile)
-            println("i")
         } else {
-            println("j")
             println("arleady exists: " + prefix + fileName)
-            println("k")
         }
-        println("l")
     }
     println("done")
 }

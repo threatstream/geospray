@@ -1,11 +1,13 @@
 package com.threatstream
 
+import java.io.File
 import akka.actor.Actor
 import akka.event.Logging
 import spray.routing._
 import spray.http._
 import MediaTypes._
 
+import com.maxmind.geoip.LookupService
 import com.snowplowanalytics.maxmind.iplookups.{IpLocation, IpLookups, IpLookupResult}
 
 import spray.json._
@@ -16,7 +18,7 @@ import IpCombined._
 
 /** Add conversion capability from IpCombined => JSON */
 object ExtendedJsonProtocol extends DefaultJsonProtocol {
-    implicit val ipCombinedFormat = jsonFormat15(IpCombined.apply)
+    implicit val ipCombinedFormat = jsonFormat16(IpCombined.apply)
 }
 
 import ExtendedJsonProtocol._
@@ -40,24 +42,35 @@ class GeoSprayActor extends Actor with GeoSpray {
 // this trait defines our service behavior independently from the service actor
 trait GeoSpray extends HttpService {
 
+    private val _prefix = System.getenv("HOME") + "/"
+
     val ipLookups = {
         import java.io.File
         import com.amazonaws.services.s3.AmazonS3Client
         import com.amazonaws.services.s3.model.GetObjectRequest
         import com.amazonaws.auth.BasicAWSCredentials
 
-        val prefix = System.getenv("HOME") + "/"
         val geoFile = "GeoLiteCity.dat"
-        val ispFile = "GeoIPISP.dat"
+        val netspeedFile = "GeoIPNetspeed.dat"
         val orgFile = "GeoIPOrg.dat"
+        val asnFile = "GeoIPASNum.dat"
 
-        Seq(geoFile, ispFile, orgFile).map(fileName => {
-            val dbFile = new File(prefix + fileName)
+        Seq(geoFile, netspeedFile, orgFile, asnFile).map(fileName => {
+            val dbFile = new File(_prefix + fileName)
             if (!dbFile.exists) {
                 throw new Exception("Missing required data file: " + dbFile.getAbsolutePath)
             }
         })
-        IpLookups(geoFile=Some(prefix + geoFile), ispFile=Some(prefix + ispFile), orgFile=Some(prefix + orgFile), memCache=false, lruCache=1)
+        IpLookups(geoFile=Some(_prefix + geoFile), netspeedFile=Some(_prefix + netspeedFile), orgFile=Some(_prefix + orgFile), memCache=false, lruCache=1)
+    }
+
+    val asnLookups = {
+        val asnFile = "GeoIPASNum.dat"
+        val dbFile = new File(_prefix + asnFile)
+        if (!dbFile.exists) {
+            throw new Exception("Missing required data file: " + dbFile.getAbsolutePath)
+        }
+        new LookupService(_prefix + asnFile)
     }
 
 
@@ -68,7 +81,7 @@ trait GeoSpray extends HttpService {
                     respondWithMediaType(`application/json`) { // XML is marshalled to `text/xml` by default, so we simply override here
                         val ipLookupResult = ipLookups.performLookups(ipv4Address)
                         println(ipLookupResult)
-                        val out: IpCombined = ipLookupResult
+                        val out: IpCombined = (ipLookupResult, asnLookups.getOrg(ipv4Address))
                         complete { out.toJson.prettyPrint }
                     }
                 }
